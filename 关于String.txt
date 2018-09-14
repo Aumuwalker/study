@@ -1,0 +1,32 @@
+关于String:
+public class AboutString {
+
+	public static void main(String[] args) {
+		String str1 = "hello world";
+		String str2 = str1;
+		System.out.println(str1);
+		System.out.println(str2);
+		System.out.println(str1 == str2);
+		str2 = "hello java";
+		System.out.println(str1);
+		System.out.println(str2);
+		System.out.println(str1 == str2);
+	}
+
+}
+
+运行结果如下：
+hello world
+hello world
+true
+hello world
+hello java
+false
+
+从结果中可以看出改变str2时，str1不变，hello world是在JVM创建的字符串常量，str1和str2指向的是同一个对象hello world，
+其引用地址是相等的，所以str1==str2为true，当str2="hello java"时，str2会指向另一个字符串常量hello java，此时两者的引用地址
+就不同了，所以str1==str2为false。
+
+java中的每个类都会默认继承Object类，其中有一个toString方法，这个方法决定了打印出的对象的表现形式，
+在Object中toString的返回形式为对象所属的类名@对象内存地址，而String重写了toString方法，返回的是字符串的值，
+所以不能通过println(对象名)的方式将其地址打印出来。

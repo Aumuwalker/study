@@ -1,0 +1,21 @@
+测试代码：
+public class AboutString {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		int[] num = new int[] {1,2,3,4};
+		System.out.println(num[4]);
+	}
+
+}
+
+出错：
+Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: 4
+	at java_test.AboutString.main(AboutString.java:8)
+从错误中看出抛出了一个异常，此异常是类ArrayIndexOutOfBoundsException，从名字看出产生了数组下标越界异常
+
+将上述代码的System.out.println(num[4])改为System.out.println(num[-1])后再次测试，
+出错：
+Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: -1
+	at java_test.AboutString.main(AboutString.java:8)
+与上面错误一样，数组下标越界，从后面数字不同可以看出上面数组下标值为4时越界，而更改后数组下标值为-1时越界。
