@@ -1,5 +1,8 @@
 package java_test;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -7,13 +10,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import connDB.ConnDB;
+
 /**
- * Company类，属性包括一年的利润，营业额，员工，经理，股东
- * 方法包括通过输入姓名查找指定的员工，经理或股东
- * 创建制定数量的员工，经理，股东
- * 计算公司一年的总支出
- * 查看每个员工，经理或股东的信息
- * 查看全体人员的信息
+ * Company类，属性包括一年的利润，营业额，员工，经理，股东 方法包括通过输入姓名查找指定的员工，经理或股东 创建制定数量的员工，经理，股东
+ * 计算公司一年的总支出 查看每个员工，经理或股东的信息 查看全体人员的信息
+ * 
  * @author Han
  *
  */
@@ -23,157 +25,261 @@ public class Company {
 	public static double profit;
 	// 公司一年的营业额
 	public static double turnover = Math.random() * 10000000 + 100000000;
-	//公司员工
-	public HashSet<Staff> staffSet;
-	//公司经理
-	public HashSet<Manager> managerSet;
-	//公司股东
-	public HashSet<ShareHolder> shareHolderSet;
-	
-	public Company() {
-		//默认为10个员工，5个经理，3个股东
-		this(10,5,3);
+	// 公司员工
+	public HashSet<Staff> setStaff = new HashSet<>();
+	// 公司经理
+	public HashSet<Manager> setManager = new HashSet<>();
+	// 公司股东
+	public HashSet<ShareHolder> setShareHolder = new HashSet<>();
+
+	public Company() throws SQLException {
+		// 默认为10个员工，5个经理，3个股东
+		this(10, 5, 3);
 	}
-	
-	public Company(int staffNumber,int managerNumber,int shareHolderNumber) {
-		staffSet = createStaff(staffNumber);
-		managerSet = createManager(managerNumber);
-		Company.profit = Company.turnover - Company.caculateAllPay(staffSet, managerSet);
-		shareHolderSet = createShareHolder(shareHolderNumber);
+
+	public Company(int staffNumber, int managerNumber, int shareHolderNumber) throws SQLException {
+//		createStaff(staffNumber);
+//		createManager(managerNumber);
+//		createShareHolder(shareHolderNumber);
+//		Company.profit = Company.turnover - caculateAllPay(setStaff, setManager);
+		Company.profit = Company.turnover - caculateAllPay();
+		setStaff.clear();
+		setManager.clear();
+		setShareHolder.clear();
 	}
 
 	// 生成员工,number为员工数量
-	private HashSet<Staff> createStaff(int number) {
-		Set<Staff> setStaff = new HashSet<>();
+	private void createStaff(int number) throws SQLException {
 		while (setStaff.size() < number) {
 			setStaff.add(new Staff());
 		}
-		return (HashSet<Staff>) setStaff;
+		for (Staff staff : setStaff) {
+			Statement state = ConnDB.getConnection().createStatement();
+			// 将Calendar转换成Date
+			java.util.Date date = staff.birthday.getTime();
+			java.sql.Date sqlDate = new java.sql.Date(date.getTime());
+			state.executeUpdate("insert into staff(name,salary,birthday) values(" + "'" + staff.name + "'" + ","
+					+ staff.salary + "," + "'" + sqlDate + "'" + ")");
+			if (state != null) {
+				state.close();
+			}
+		}
 	}
 
 	// 生成经理,number为经理数量
-	private HashSet<Manager> createManager(int number) {
-		Set<Manager> setManager = new HashSet<>();
+	private void createManager(int number) throws SQLException {
 		while (setManager.size() < number) {
 			setManager.add(new Manager());
 		}
-		return (HashSet<Manager>) setManager;
+		for (Manager manager : setManager) {
+			Statement state = ConnDB.getConnection().createStatement();
+			// 将Calendar转换成Date
+			java.util.Date date = manager.birthday.getTime();
+			java.sql.Date sqlDate = new java.sql.Date(date.getTime());
+			state.executeUpdate("insert into manager values(" + "'" + manager.name + "'" + ","
+					+ manager.salary + "," + "'" + sqlDate + "'" + "," + manager.bonus + ")");
+			if (state != null) {
+				state.close();
+			}
+		}
 	}
 
 	// 生成股东,number为股东数量
-	private HashSet<ShareHolder> createShareHolder(int number) {
-		Set<ShareHolder> setShareHolder = new HashSet<>();
-		//公司总股份
+	private void createShareHolder(int number) throws SQLException {
+		// 公司总股份
 		int sharesSurplus = 100;
-		//给前number-1个股东通过随机数给各股东股份,
-		while (setShareHolder.size() < number-1) {
-			int shares = (int)(Math.random()*(sharesSurplus - 10)) + 10;
+		// 给前number-1个股东通过随机数给各股东股份,
+		while (setShareHolder.size() < number - 1) {
+			int shares = (int) (Math.random() * (sharesSurplus - 10)) + 10;
 			sharesSurplus = sharesSurplus - shares;
 			setShareHolder.add(new ShareHolder(shares));
 		}
-		//最后一个股东的股份为剩下的股份
+		// 最后一个股东的股份为剩下的股份
 		setShareHolder.add(new ShareHolder(sharesSurplus));
 		sharesSurplus = 0;
-		return (HashSet<ShareHolder>) setShareHolder;
+		for (ShareHolder shareHolder : setShareHolder) {
+			Statement state = ConnDB.getConnection().createStatement();
+			// 将Calendar转换成Date
+			state.executeUpdate("insert into shareHolder values(" + "'" + shareHolder.name + "'" + ","
+					+ shareHolder.shares + ")");
+			if (state != null) {
+				state.close();
+			}
+		}
 	}
 
-	//根据姓名查找员工
-	public Staff searchStaff(String name) {
-		for(Staff staff:staffSet) {
-			if(staff.name.equals(name)) {
-				return staff;
-			}
+	// 根据姓名查找员工
+	public Staff searchStaff(String name) throws SQLException {
+		Staff staff = null;
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from staff where name = " + "'" + name + "'");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			staff = new Staff(result.getString("name"), result.getDouble("salary"), date);
 		}
-		return null;
-	}
-	
-	//根据姓名查找经理
-	public Manager searchManager(String name) {
-		for(Manager manager:managerSet) {
-			if(manager.name.equals(name)) {
-				return manager;
-			}
+		if (state != null) {
+			state.close();
 		}
-		return null;
-	}
-	
-	//根据姓名查找股东
-	public ShareHolder searchShareHolder(String name) {
-		for(ShareHolder shareHolder:shareHolderSet) {
-			if(shareHolder.name.equals(name)) {
-				return shareHolder;
-			}
+		if (result != null) {
+			result.close();
 		}
-		return null;
+		return staff;
 	}
-	
-	//计算公司一年员工和经理的工资及奖金
-	public static double caculateAllPay(HashSet<Staff> setStaff,HashSet<Manager> setManager) {
+
+	// 根据姓名查找经理
+	public Manager searchManager(String name) throws SQLException {
+		Manager manager = null;
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from manager where name = " + "'" + name + "'");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			manager = new Manager(result.getString("name"), result.getDouble("salary"), date,
+					result.getDouble("bonus"));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		return manager;
+	}
+
+	// 根据姓名查找股东
+	public ShareHolder searchShareHolder(String name) throws SQLException {
+		ShareHolder shareHolder = null;
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from shareHolder where name = " + "'" + name + "'");
+		while (result.next()) {
+			shareHolder = new ShareHolder(result.getString("name"), result.getInt("shares"));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		return shareHolder;
+	}
+
+	// 计算公司一年员工和经理的工资及奖金
+	public double caculateAllPay(HashSet<Staff> setStaff, HashSet<Manager> setManager) {
 		double sum = 0;
-		for(Staff staff:setStaff) {
-			sum = sum + staff.salary*12;
+		for (Staff staff : setStaff) {
+			sum = sum + staff.salary * 12;
 		}
-		for(Manager manager:setManager) {
-			sum = sum + (manager.salary + manager.bonus)*12;
+		for (Manager manager : setManager) {
+			sum = sum + (manager.salary + manager.bonus) * 12;
 		}
 		return sum;
 	}
 
-	//查看所有员工信息
-	public void showAllStaff() {
-		for(Staff staff:staffSet) {
+	public double caculateAllPay() throws SQLException {
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from staff");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			setStaff.add(new Staff(result.getString("name"), result.getDouble("salary"), date));
+		}
+		result = state.executeQuery("select * from manager");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			setManager.add(
+					new Manager(result.getString("name"), result.getDouble("salary"), date, result.getDouble("bonus")));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		return caculateAllPay(setStaff, setManager);
+	}
+	
+	// 查看所有员工信息
+	public void showAllStaff() throws SQLException {
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from staff");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			setStaff.add(new Staff(result.getString("name"), result.getDouble("salary"), date));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		for(Staff staff:setStaff) {
 			System.out.println(staff);
 		}
+		setStaff.clear();
 	}
-	
-	//查看所有经理信息
-	public void showAllManager() {
-		for(Manager manager:managerSet) {
+
+	// 查看所有经理信息
+	public void showAllManager() throws SQLException {
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from manager");
+		while (result.next()) {
+			java.util.Date date = new java.util.Date(result.getDate("birthday").getTime());
+			setManager.add(
+					new Manager(result.getString("name"), result.getDouble("salary"), date, result.getDouble("bonus")));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		for(Manager manager:setManager) {
 			System.out.println(manager);
 		}
+		setManager.clear();
 	}
-	
-	//查看所有股东信息
-	public void showAllShareHolder() {
-		for(ShareHolder shareHolder:shareHolderSet) {
+
+	// 查看所有股东信息
+	public void showAllShareHolder() throws SQLException {
+		Statement state = ConnDB.getConnection().createStatement();
+		ResultSet result = state.executeQuery("select * from shareHolder");
+		while (result.next()) {
+			setShareHolder.add(new ShareHolder(result.getString("name"), result.getInt("shares")));
+		}
+		if (state != null) {
+			state.close();
+		}
+		if (result != null) {
+			result.close();
+		}
+		for(ShareHolder shareHolder:setShareHolder) {
 			System.out.println(shareHolder);
 		}
+		setShareHolder.clear();
 	}
-	
-	//查看所有人员信息
-	public void showAllPeople() {
+
+	// 查看所有人员信息
+	public void showAllPeople() throws SQLException {
 		showAllStaff();
 		showAllManager();
 		showAllShareHolder();
 	}
-	
-	public static void main(String[] args) {
+
+	public static void main(String[] args) throws SQLException {
 		Company company = new Company();
 		company.showAllPeople();
-		Staff staff = null;
-		if((staff = company.searchStaff("严成")) != null)
-			System.out.println(staff);
-		else
-			System.out.println("无此员工");
-		Manager manager = null;
-		if((manager = company.searchManager("许林")) != null)
-			System.out.println(manager);
-		else
-			System.out.println("无此员工");
-		ShareHolder shareHolder = null;
-		if((shareHolder = company.searchShareHolder("严树")) != null)
-			System.out.println(shareHolder);
-		else
-			System.out.println("无此员工");
-		
+		Staff staff;
+		Manager manager;
+		ShareHolder shareHolder;
+		staff = company.searchStaff("刘文");
+		System.out.println(staff);
+		manager = company.searchManager("赵树");
+		System.out.println(manager);
+		shareHolder = company.searchShareHolder("严林");
+		System.out.println(shareHolder);
 	}
 }
 
 /*
- * person类
- * 是Staff，Manager，ShareHolder类的基类
- * 包括人的姓名，工资，生日
- * 方法包括发工资，发奖金，判断当月是否为生日月
+ * person类 是Staff，Manager，ShareHolder类的基类 包括人的姓名，工资，生日 方法包括发工资，发奖金，判断当月是否为生日月
  * 重写了equals方法
  */
 class Person {
@@ -186,12 +292,12 @@ class Person {
 		int year = (int) (Math.random() * 51) + 1950;
 		// 出生月份为1到12
 		int month = (int) (Math.random() * 12) + 1;
-		//出生天数,此处认为一个月为30天
-		int day = (int)(Math.random()*30) + 1;
-		//初始化日历
+		// 出生天数,此处认为一个月为30天
+		int day = (int) (Math.random() * 30) + 1;
+		// 初始化日历
 		birthday = Calendar.getInstance();
-		//设置日历的年，月，日
-		birthday.set(year,month,day);
+		// 设置日历的年，月，日
+		birthday.set(year, month, day);
 		// 存储姓
 		List<String> surnameList;
 		// 存储名
@@ -204,7 +310,7 @@ class Person {
 		name = surnameList.get((int) (Math.random() * 10)) + firstnameList.get((int) (Math.random() * 10));
 	}
 
-	//重写equals方法,根据姓名区分每个职位的每个人
+	// 重写equals方法,根据姓名区分每个职位的每个人
 	public boolean equals(Object object) {
 		if (object instanceof Person)
 			return this.name.equals(((Person) object).name);
@@ -222,6 +328,7 @@ class Person {
 		Calendar calendar = Calendar.getInstance();
 		return (birthday.get(birthday.MONTH) == calendar.MONTH);
 	}
+
 	public boolean isBirthday(int month) {
 		Calendar calendar = Calendar.getInstance();
 		return (birthday.get(birthday.MONTH) == month);
@@ -238,8 +345,7 @@ class Person {
 }
 
 /*
- * Staff类
- * 重写了toString方法
+ * Staff类 重写了toString方法
  */
 class Staff extends Person {
 	public Staff() {
@@ -247,16 +353,21 @@ class Staff extends Person {
 		salary = Math.random() * 2000 + 10000;
 	}
 
-	//重写toString方法
+	public Staff(String name, double salary, java.util.Date date) {
+		this.name = name;
+		this.salary = salary;
+		this.birthday.setTime(date);
+	}
+
+	// 重写toString方法
 	public String toString() {
-		return "职位:"+"员工"+" "+"姓名:"+name+" "+"工资:"+String.format("%.2f", salary)+" "+"礼物:"+present();
+		return "职位:" + "员工" + " " + "姓名:" + name + " " + "工资:" + String.format("%.2f", salary) + " " + "礼物:"
+				+ present();
 	}
 }
 
 /*
- * Manager类
- * 属性有奖金
- * 方法包括发奖金，重写了toString方法
+ * Manager类 属性有奖金 方法包括发奖金，重写了toString方法
  */
 class Manager extends Person {
 	// 奖金
@@ -268,22 +379,27 @@ class Manager extends Person {
 		bonus = Math.random() * 500 + 500;
 	}
 
+	public Manager(String name, double salary, java.util.Date date, double bonus) {
+		this.name = name;
+		this.salary = salary;
+		this.birthday.setTime(date);
+		this.bonus = bonus;
+	}
+
 	// 经理当月奖金
 	public double getBonus() {
 		return bonus;
 	}
 
-	//重写toString方法
+	// 重写toString方法
 	public String toString() {
-		return "职位:"+"经理"+" "+"姓名:"+name+" "+"工资:"+String.format("%.2f", salary)+" "+"奖金:"+String.format("%.2f", bonus)+" "+"礼物:"+present();
+		return "职位:" + "经理" + " " + "姓名:" + name + " " + "工资:" + String.format("%.2f", salary) + " " + "奖金:"
+				+ String.format("%.2f", bonus) + " " + "礼物:" + present();
 	}
 }
 
 /*
- * ShareHolder类
- * 属性有股份
- * 方法有获得年终分红，得到奖金
- * 重写了toString方法
+ * ShareHolder类 属性有股份 方法有获得年终分红，得到奖金 重写了toString方法
  */
 class ShareHolder extends Person {
 	// 股份
@@ -295,6 +411,11 @@ class ShareHolder extends Person {
 		this.shares = shares;
 	}
 
+	public ShareHolder(String name, int shares) {
+		this.name = name;
+		this.shares = shares;
+	}
+
 	// 每月股东的礼物
 	public String present() {
 		return "股东没有礼物";
@@ -302,11 +423,12 @@ class ShareHolder extends Person {
 
 	// 股东年终分红
 	public double getYearBonus() {
-		return (shares/100.0) * Company.profit * 0.1;
+		return (shares / 100.0) * Company.profit * 0.1;
 	}
-	
-	//重写toString方法
+
+	// 重写toString方法
 	public String toString() {
-		return "职位:"+"股东"+" "+"姓名:"+name+" "+"工资:"+String.format("%.2f", salary)+"礼物:"+present()+" "+"年终分红:"+String.format("%.2f", getYearBonus());
+		return "职位:" + "股东" + " " + "姓名:" + name + " " + "工资:" + String.format("%.2f", salary) + "礼物:" + present() + " "
+				+ "年终分红:" + String.format("%.2f", getYearBonus());
 	}
 }
