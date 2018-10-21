@@ -3,17 +3,18 @@ package java_test;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-public class Car extends Transportation implements ShowInf {
+public class Airplane extends Transportation implements ShowInf {
 	
-	Car(){
-		this("无", "无", 0.0, "Airplane", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", 60.0, 0.32);
+	Airplane(){
+		this("无", "无", 0.0, "Airplane", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", 300.0, 0.75);
 	}
 	
-	Car(String leaveArea, String arriveArea, double distance){
-		this(leaveArea, arriveArea, distance, "Car", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", 60.0, 0.32);
+	Airplane(String leaveArea, String arriveArea, double distance){
+		this(leaveArea, arriveArea, distance, "Airplane", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", "2016-01-01 00:00:00", 300.0, 0.75);
 	}
 	
-	Car(String leaveArea, String arriveArea, double distance, String transportMode, String leave, String arrive, String returnTime, String getTicket, String securityCheck, String wait,double speed, double price){
+	
+	Airplane(String leaveArea, String arriveArea, double distance, String transportMode, String leave, String arrive, String returnTime, String getTicket, String securityCheck, String wait,double speed, double price){
 		this.leaveArea = leaveArea;
 		this.arriveArea = arriveArea;
 		this.distance = distance;
